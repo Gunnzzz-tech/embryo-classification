@@ -1,0 +1,421 @@
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  opacity: 0;
+  transition: opacity 0.5s ease-out;
+}
+
+.page.visible {
+  opacity: 1;
+}
+
+/* Header */
+.header {
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+  padding: 1.75rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #ffffff 0%, #f0f0ff 100%);
+  border: 1px solid var(--border-muted);
+  box-shadow: var(--shadow);
+  animation: slideInStagger 0.6s ease-out both;
+}
+
+.headerContent {
+  position: relative;
+  z-index: 2;
+}
+
+.headerBadge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  background: var(--accent-muted);
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  margin-bottom: 0.75rem;
+}
+
+.header h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin: 0 0 0.25rem 0;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--text-primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Decorative floating orbs */
+.headerDecor {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 200px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.orb1,
+.orb2 {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(50px);
+}
+
+.orb1 {
+  width: 140px;
+  height: 140px;
+  background: rgba(79, 110, 247, 0.12);
+  top: -30px;
+  right: -10px;
+  animation: float 6s ease-in-out infinite;
+}
+
+.orb2 {
+  width: 90px;
+  height: 90px;
+  background: rgba(139, 92, 246, 0.1);
+  bottom: -20px;
+  right: 50px;
+  animation: float 5s ease-in-out infinite reverse;
+}
+
+/* KPI Cards */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: 0 2px 12px rgba(30, 40, 80, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+  animation: slideInStagger 0.5s ease-out both;
+  transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
+}
+
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(30, 40, 80, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* Color variants - top accent bar */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  transition: height var(--transition-base);
+}
+
+.card:hover::before {
+  height: 5px;
+}
+
+.cardAccent::before {
+  background: linear-gradient(90deg, var(--accent), var(--teal));
+}
+
+.cardSuccess::before {
+  background: linear-gradient(90deg, var(--success), #2dd4bf);
+}
+
+.cardWarning::before {
+  background: linear-gradient(90deg, var(--warning), #fb923c);
+}
+
+.cardPurple::before {
+  background: linear-gradient(90deg, var(--purple), var(--accent));
+}
+
+.cardAccent:hover {
+  border-color: rgba(79, 110, 247, 0.2);
+  box-shadow: 0 12px 28px rgba(30, 40, 80, 0.1), 0 0 24px rgba(79, 110, 247, 0.1);
+}
+
+.cardSuccess:hover {
+  border-color: rgba(34, 197, 94, 0.2);
+  box-shadow: 0 12px 28px rgba(30, 40, 80, 0.1), 0 0 24px rgba(34, 197, 94, 0.1);
+}
+
+.cardWarning:hover {
+  border-color: rgba(245, 158, 11, 0.2);
+  box-shadow: 0 12px 28px rgba(30, 40, 80, 0.1), 0 0 24px rgba(245, 158, 11, 0.1);
+}
+
+.cardPurple:hover {
+  border-color: rgba(139, 92, 246, 0.2);
+  box-shadow: 0 12px 28px rgba(30, 40, 80, 0.1), 0 0 24px rgba(139, 92, 246, 0.1);
+}
+
+.cardIcon {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  transition: transform var(--transition-spring);
+}
+
+.card:hover .cardIcon {
+  transform: scale(1.08);
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+}
+
+.cardLabel {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.cardValue {
+  display: block;
+  font-size: 2.1rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.cardHint {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.75rem;
+}
+
+.cardLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  margin-top: 0.75rem;
+  font-weight: 600;
+}
+
+.arrow {
+  display: inline-block;
+  transition: transform var(--transition-spring);
+}
+
+.cardLink:hover .arrow {
+  transform: translateX(4px);
+}
+
+/* Section headers */
+.section {
+  margin-bottom: 2.5rem;
+  animation: slideInStagger 0.5s ease-out both;
+}
+
+.section h2 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0 0 1.25rem 0;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section h2::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
+}
+
+/* Framework steps */
+.framework {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 1rem;
+}
+
+.step {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  position: relative;
+  box-shadow: var(--shadow);
+  animation: slideInStagger 0.5s ease-out both;
+  transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
+}
+
+.step:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.stepNum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+  transition: transform var(--transition-spring);
+}
+
+.step:hover .stepNum {
+  transform: scale(1.15);
+}
+
+.connector {
+  display: none;
+}
+
+.step strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 0.35rem;
+  color: var(--text-primary);
+}
+
+.step p {
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Quality metrics */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.metric {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: var(--shadow);
+  animation: slideInStagger 0.5s ease-out both;
+  transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.metric::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 3px 0 0 3px;
+}
+
+.metric.pass::before {
+  background: var(--success);
+}
+
+.metric.warn::before {
+  background: var(--warning);
+}
+
+.metric.fail::before {
+  background: var(--danger);
+}
+
+.metric:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.metric.pass:hover {
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.metric.warn:hover {
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.metric.fail:hover {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.metricName {
+  width: 100%;
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+}
+
+.metricValue {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--text-primary);
+}
+
+.metricStatus {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-left: auto;
+  padding: 0.2rem 0.55rem;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.metric.pass .metricStatus {
+  background: var(--success-muted);
+  color: var(--success);
+}
+
+.metric.warn .metricStatus {
+  background: var(--warning-muted);
+  color: var(--warning);
+}
+
+.metric.fail .metricStatus {
+  background: var(--danger-muted);
+  color: var(--danger);
+}

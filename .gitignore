@@ -1,0 +1,19 @@
+node_modules/
+dist/
+*.local
+.env
+.env.*
+!.env.example
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
