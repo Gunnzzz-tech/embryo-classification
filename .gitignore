@@ -17,3 +17,10 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+client_secret_*.json
+Claude outputs/
+src_backup_oct/
+_to_delete/
+*.bak_oct
+*.bak_oct2
+blastocyst_ml/heatmap_out/

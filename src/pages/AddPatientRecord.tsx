@@ -141,7 +141,7 @@ export function AddPatientRecord() {
             embryoImagesRaw.map(async (img, i) => {
               const file = entriesWithFile[i]?.file;
               if (!file) return img;
-              const ml = await fetchMlAssessmentForImage(file, { age: patientAgeNum });
+              const ml = await fetchMlAssessmentForImage(file);
               return ml ? { ...img, mlAssessment: ml } : img;
             })
           )
@@ -189,7 +189,7 @@ export function AddPatientRecord() {
           <h2>Patient & cycle</h2>
           <div className={styles.grid}>
             <label className={styles.label}>
-              Patient reference <span className={styles.required}>*</span>
+              <span className={styles.labelText}>Patient reference <span className={styles.required}>*</span></span>
               <input
                 type="text"
                 value={patientRef}
@@ -199,7 +199,7 @@ export function AddPatientRecord() {
               />
             </label>
             <label className={styles.label}>
-              Patient age
+              <span className={styles.labelText}>Patient age</span>
               <input
                 type="number"
                 min={18}
@@ -210,7 +210,7 @@ export function AddPatientRecord() {
               />
             </label>
             <label className={styles.label}>
-              Cycle date <span className={styles.required}>*</span>
+              <span className={styles.labelText}>Cycle date <span className={styles.required}>*</span></span>
               <input
                 type="date"
                 value={cycleDate}
@@ -219,7 +219,7 @@ export function AddPatientRecord() {
               />
             </label>
             <label className={styles.label}>
-              Retrieval date
+              <span className={styles.labelText}>Retrieval date</span>
               <input
                 type="date"
                 value={retrievalDate}
@@ -227,7 +227,7 @@ export function AddPatientRecord() {
               />
             </label>
             <label className={styles.label}>
-              Fertilization method
+              <span className={styles.labelText}>Fertilization method</span>
               <select
                 value={fertilizationMethod ?? ''}
                 onChange={(e) =>
@@ -242,7 +242,7 @@ export function AddPatientRecord() {
               </select>
             </label>
             <label className={styles.label}>
-              Number of embryos
+              <span className={styles.labelText}>Number of embryos</span>
               <input
                 type="number"
                 min={0}
@@ -251,7 +251,7 @@ export function AddPatientRecord() {
               />
             </label>
             <label className={styles.label}>
-              Selected for transfer
+              <span className={styles.labelText}>Selected for transfer</span>
               <input
                 type="number"
                 min={0}
@@ -266,7 +266,7 @@ export function AddPatientRecord() {
           <h2>Initial grading</h2>
           <div className={styles.gradeRow}>
             <label className={styles.label}>
-              Primary grade
+              <span className={styles.labelText}>Primary grade</span>
               <select
                 value={primaryGrade}
                 onChange={(e) => setPrimaryGrade(e.target.value as EmbryoGrade)}
@@ -277,7 +277,7 @@ export function AddPatientRecord() {
               </select>
             </label>
             <label className={styles.label}>
-              Secondary grade
+              <span className={styles.labelText}>Secondary grade</span>
               <select
                 value={secondaryGrade}
                 onChange={(e) => setSecondaryGrade(e.target.value as EmbryoGrade)}
@@ -289,7 +289,7 @@ export function AddPatientRecord() {
             </label>
           </div>
           <label className={styles.label}>
-            Notes
+            <span className={styles.labelText}>Notes</span>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}

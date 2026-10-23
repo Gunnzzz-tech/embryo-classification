@@ -1,12 +1,16 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, type Role } from '../context/AuthContext';
 
-export function RequireAuth({ children }: { children: React.ReactNode }) {
+export function RequireAuth({ children, role }: { children: React.ReactNode; role?: Role }) {
   const { auth } = useAuth();
   const location = useLocation();
 
   if (!auth.signedIn) {
     return <Navigate to="/signin" state={{ from: location }} replace />;
+  }
+
+  if (role && auth.role !== role) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

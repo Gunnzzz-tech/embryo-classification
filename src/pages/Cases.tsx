@@ -13,34 +13,49 @@ const statusLabels: Record<VerificationStatus, string> = {
   discrepancy: 'Discrepancy',
 };
 
-export function Cases() {
-  const { cases } = useCases();
-  const [searchParams] = useSearchParams();
-  const filterFromUrl = searchParams.get('status') ?? 'all';
-  const [filter, setFilter] = useState<string>(filterFromUrl);
+const STATUS_FILTERS = ['pending_review', 'flagged', 'verified'] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number];
 
-  const filtered = useMemo(() => {
-    if (filter === 'all') return cases;
-    return cases.filter((c) => c.status === filter);
-  }, [filter, cases]);
+export function Cases() {
+  const { cases, clearAllCases } = useCases();
+  const [searchParams] = useSearchParams();
+  const statusFromUrl = searchParams.get('status');
+  const [filter, setFilter] = useState<StatusFilter>(
+    STATUS_FILTERS.includes(statusFromUrl as StatusFilter) ? (statusFromUrl as StatusFilter) : 'pending_review'
+  );
+
+  const filtered = useMemo(() => cases.filter((c) => c.status === filter), [filter, cases]);
+
+  const handleClearAll = () => {
+    if (cases.length === 0) return;
+    const ok = window.confirm(
+      `Delete all ${cases.length} patient record${cases.length === 1 ? '' : 's'}? This cannot be undone.`
+    );
+    if (ok) clearAllCases();
+  };
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
         <h1>Cases & verification</h1>
         <p className={styles.subtitle}>Embryo cases and system assessment results</p>
-        <Link to="/add-patient" className={styles.addLink}>+ Add patient record</Link>
+        <div className={styles.headerActions}>
+          <Link to="/add-patient" className={styles.addLink}>+ Add patient record</Link>
+          <button type="button" className={styles.clearAllBtn} onClick={handleClearAll}>
+            Clear all records
+          </button>
+        </div>
       </header>
 
       <div className={styles.toolbar}>
         <div className={styles.filters}>
-          {['all', 'pending_review', 'first_review', 'second_review', 'verified', 'flagged'].map((s) => (
+          {STATUS_FILTERS.map((s) => (
             <button
               key={s}
               className={filter === s ? `${styles.filterBtn} ${styles.active}` : styles.filterBtn}
               onClick={() => setFilter(s)}
             >
-              {s === 'all' ? 'All' : statusLabels[s as VerificationStatus]}
+              {statusLabels[s]}
             </button>
           ))}
         </div>
@@ -50,6 +65,7 @@ export function Cases() {
         <table className={styles.table}>
           <thead>
             <tr>
+              <th>Image</th>
               <th>Case ID</th>
               <th>Patient ref</th>
               <th>Cycle date</th>
@@ -79,6 +95,13 @@ function CaseRow({ row }: { row: EmbryoCase }) {
   const gradeStr = `${row.primaryGrade}/${row.secondaryGrade}`;
   return (
     <tr>
+      <td>
+        {row.embryoImages?.[0] ? (
+          <img src={row.embryoImages[0].dataUrl} alt={`Embryo for ${row.caseId}`} className={styles.thumb} />
+        ) : (
+          <span className={styles.thumbEmpty} />
+        )}
+      </td>
       <td><code className={styles.code}>{row.caseId}</code></td>
       <td>{row.patientRef}</td>
       <td>{row.cycleDate}</td>
@@ -87,7 +110,9 @@ function CaseRow({ row }: { row: EmbryoCase }) {
       <td><span className={styles.grade}>{gradeStr}</span></td>
       <td><StatusBadge status={row.status} /></td>
       <td>
-        <Link to={`/cases/${row.id}`} className={styles.detailLink}>View</Link>
+        <Link to={`/cases/${row.id}`} className={row.status === 'pending_review' ? `${styles.detailLink} ${styles.reviewLink}` : styles.detailLink}>
+          {row.status === 'pending_review' ? 'Review' : 'View'}
+        </Link>
       </td>
     </tr>
   );

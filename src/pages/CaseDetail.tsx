@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { dataUrlToBlob, mlApiBase, predictLiveBirth } from '../api/mlPredict';
+import { assessmentFromHeatmap, dataUrlToBlob, gradeText, mlApiBase, predictGardnerGradesWithHeatmap } from '../api/mlPredict';
+import { InsightsPanel } from '../components/InsightsPanel';
+import { useAuth } from '../context/AuthContext';
 import { useCases } from '../context/CasesContext';
 import type { EmbryoCase, EmbryoImage, EmbryoMlAssessment, VerificationStatus } from '../types';
 import styles from './CaseDetail.module.css';
@@ -14,7 +16,7 @@ const statusLabels: Record<VerificationStatus, string> = {
   discrepancy: 'Discrepancy',
 };
 
-type MlAssessmentOk = Extract<EmbryoMlAssessment, { probabilities: [number, number] }>;
+type MlAssessmentOk = Extract<EmbryoMlAssessment, { predictedExp: number }>;
 
 /** Per-embryo ML, with legacy fallback: case-level score applied only to embryo #1 in old data. */
 function getEmbryoMl(case_: EmbryoCase, index: number): EmbryoMlAssessment | undefined {
@@ -48,68 +50,21 @@ function firstEmbryoMlForCaseRecord(
   return images[0]?.mlAssessment ?? previousCaseMl;
 }
 
-function MlLbScores({
-  ml,
-  patientAge,
-  title,
-}: {
-  ml: MlAssessmentOk;
-  patientAge?: number;
-  title?: string;
-}) {
-  const p0 = ml.probabilities[0];
-  const p1 = ml.probabilities[1];
-  return (
-    <div className={styles.mlScores}>
-      {title && <h3 className={styles.mlEmbryoTitle}>{title}</h3>}
-      <dl className={styles.mlProbDl}>
-        <dt>P(LB = 0)</dt>
-        <dd>
-          <strong>{(p0 * 100).toFixed(1)}%</strong>
-          <span className={styles.mlProbNote}>
-            {' '}
-            — estimated chance the label is <strong>no live birth</strong> (as coded in training data).
-          </span>
-        </dd>
-        <dt>P(LB = 1)</dt>
-        <dd>
-          <strong>{(p1 * 100).toFixed(1)}%</strong>
-          <span className={styles.mlProbNote}>
-            {' '}
-            — estimated chance the label is <strong>live birth</strong> (same coding).
-          </span>
-        </dd>
-      </dl>
-      <p className={styles.mlLine}>
-        <span className={styles.mlLabel}>Argmax class</span> <strong>{ml.predictedLbClass}</strong> (0 = LB negative,
-        1 = LB positive)
-        {' · '}
-        <span className={styles.mlLabel}>sum</span> P(LB=0)+P(LB=1) = <strong>{((p0 + p1) * 100).toFixed(1)}%</strong>
-      </p>
-      <div className={styles.mlExplain}>
-        <p className={styles.mlExplainLead}>What this means (mechanically)</p>
-        <p>
-          The model outputs two probabilities over two classes. After softmax they always sum to <strong>1</strong>.{' '}
-          <strong>P(LB = 0)</strong> is the model&apos;s estimate that this image matches patterns seen for{' '}
-          <strong>LB = 0</strong> in training; <strong>P(LB = 1)</strong> is the same for <strong>LB = 1</strong>. For
-          example, if P(LB=1) = 0.73 and P(LB=0) = 0.27, the model is leaning toward the positive class on learned
-          image patterns, with 0.73 + 0.27 = 1.
-        </p>
-        <p className={styles.mlMuted}>
-          Based on this embryo image
-          {patientAge != null ? ` and patient age ${patientAge}` : ''}. This is not a calibrated clinical probability —
-          validate before any real-world use.
-        </p>
-      </div>
-    </div>
-  );
-}
+const AXIS_INFO: Record<'EXP' | 'ICM' | 'TE', string> = {
+  EXP: 'Expansion — how developed the fluid-filled cavity looks',
+  ICM: 'Inner cell mass — the cells that would go on to form the fetus',
+  TE: 'Trophectoderm — the outer cell layer that would go on to form the placenta',
+};
 
 export function CaseDetail() {
   const { id } = useParams<{ id: string }>();
   const { getCaseById, updateCase } = useCases();
   const case_ = id ? getCaseById(id) : undefined;
+  const { auth } = useAuth();
   const [mlLoading, setMlLoading] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectError, setRejectError] = useState<string | null>(null);
 
   const mlBase = mlApiBase();
   const embryoGallery = case_?.embryoImages ?? [];
@@ -134,16 +89,11 @@ export function CaseDetail() {
             if (!img) return;
             try {
               const blob = await dataUrlToBlob(img.dataUrl);
-              const data = await predictLiveBirth(mlBase, blob, { age: case_.patientAge });
+              const data = await predictGardnerGradesWithHeatmap(mlBase, blob);
               if (cancelled) return;
               next[i] = {
                 ...img,
-                mlAssessment: {
-                  assessedAt: new Date().toISOString(),
-                  predictedLbClass: data.predicted_lb_class,
-                  probabilityLb1: data.probability_lb_1,
-                  probabilities: data.probabilities,
-                },
+                mlAssessment: assessmentFromHeatmap(data),
               };
             } catch (e) {
               if (cancelled) return;
@@ -182,11 +132,41 @@ export function CaseDetail() {
     );
   }
 
+  const isAdmin = auth.signedIn && auth.role === 'admin';
+  const reviewerName = auth.signedIn ? `Dr. ${auth.doctorId}` : 'Unknown';
+
+  const approve = () => {
+    const ok = window.confirm(`Approve this assessment for ${case_.caseId}? The result will be locked.`);
+    if (!ok) return;
+    updateCase(case_.id, {
+      status: 'verified',
+      firstReviewer: reviewerName,
+      verifiedAt: new Date().toISOString(),
+      discrepancyReason: undefined,
+    });
+    setRejecting(false);
+  };
+
+  const reject = () => {
+    const reason = rejectReason.trim();
+    if (!reason) {
+      setRejectError('Please write a short reason so the team knows what to recheck.');
+      return;
+    }
+    updateCase(case_.id, {
+      status: 'flagged',
+      firstReviewer: reviewerName,
+      discrepancyReason: reason,
+      verifiedAt: undefined,
+    });
+    setRejecting(false);
+    setRejectReason('');
+    setRejectError(null);
+  };
+
   const isVerified = case_.status === 'verified';
   const isFlagged = case_.status === 'flagged';
-  const firstCaptureDay = embryoGallery[0]?.captureDay;
-  const okLb = listOkEmbryoMls(case_);
-  const singleLb = okLb.length === 1 ? okLb[0] : undefined;
+  const okMl = listOkEmbryoMls(case_);
   const mlErrors = (case_.embryoImages ?? [])
     .map((img, i) => {
       const m = getEmbryoMl(case_, i);
@@ -207,194 +187,105 @@ export function CaseDetail() {
         </span>
       </header>
 
-      <div className={styles.grid}>
+      {embryoGallery.length > 0 && (
         <section className={styles.section}>
-          <h2>Result summary</h2>
-          <dl className={styles.dl}>
-            <dt>Embryos assessed</dt>
-            <dd>{case_.embryoCount}</dd>
-            <dt>Selected for transfer</dt>
-            <dd>{case_.selectedCount}</dd>
-            <dt>Primary grade</dt>
-            <dd><strong>{case_.primaryGrade}</strong></dd>
-            <dt>Secondary grade</dt>
-            <dd><strong>{case_.secondaryGrade}</strong></dd>
-            {embryoGallery.length > 0 && (
-              <>
-                <dt>Development day (capture)</dt>
-                <dd>
-                  {embryoGallery.length === 1 && firstCaptureDay
-                    ? firstCaptureDay
-                    : `${embryoGallery.length} embryos — see gallery`}
-                </dd>
-                <dt>Live birth (LB)</dt>
-                <dd>
-                  {singleLb && (
-                    <>
-                      <strong>P(LB=1) {(singleLb.ml.probabilityLb1 * 100).toFixed(1)}%</strong>
-                      <span className={styles.lbSummaryMuted}>
-                        {' · '}P(LB=0) {(singleLb.ml.probabilities[0] * 100).toFixed(1)}% · predicted class{' '}
-                        {singleLb.ml.predictedLbClass}
-                        {' · '}
-                        <span className={styles.lbSummaryMuted}>embryo #{singleLb.embryoNumber}</span>
-                      </span>
-                    </>
-                  )}
-                  {okLb.length > 1 && (
-                    <span className={styles.lbSummaryMuted}>
-                      {okLb.map(({ embryoNumber, ml }, j) => (
-                        <span key={embryoNumber}>
-                          #{embryoNumber}: P(LB=1) {(ml.probabilityLb1 * 100).toFixed(1)}%
-                          {j < okLb.length - 1 ? ' · ' : ''}
-                        </span>
-                      ))}
-                      {' — '}
-                      full breakdown below.
-                    </span>
-                  )}
-                  {okLb.length === 0 && mlErrors.length > 0 && (
-                    <span className={styles.mlErrorInline}>
-                      Unavailable —{' '}
-                      {mlErrors.map((e) => `#${e.embryoNumber}: ${e.message}`).join('; ')}
-                    </span>
-                  )}
-                  {mlBase && pendingMlCount > 0 && (
-                    <span className={styles.lbSummaryMuted}>
-                      {mlLoading
-                        ? `Computing P(LB=0) and P(LB=1) for ${pendingMlCount} image(s)…`
-                        : 'Starting model…'}
-                    </span>
-                  )}
-                  {mlBase &&
-                    okLb.length === 0 &&
-                    mlErrors.length === 0 &&
-                    pendingMlCount === 0 &&
-                    embryoGallery.length > 0 && (
-                      <span className={styles.lbSummaryMuted}>No LB scores stored for this case yet.</span>
-                    )}
-                  {!mlBase && (
-                    <span className={styles.lbSummaryMuted}>
-                      Not computed — the predict API is not configured. Use the checklist under{' '}
-                      <strong>Live birth (LB) model</strong> below.
-                    </span>
-                  )}
-                </dd>
-              </>
-            )}
-            {case_.patientAge != null && (
-              <>
-                <dt>Patient age</dt>
-                <dd>{case_.patientAge}</dd>
-              </>
-            )}
-            {case_.retrievalDate && (
-              <>
-                <dt>Retrieval date</dt>
-                <dd>{case_.retrievalDate}</dd>
-              </>
-            )}
-            {case_.fertilizationMethod && (
-              <>
-                <dt>Fertilization</dt>
-                <dd>{case_.fertilizationMethod}</dd>
-              </>
-            )}
-          </dl>
-          {embryoGallery.length > 0 && (
-            <>
-              <p className={styles.gradeHint}>
-                Gardner-style grades (A–D) are not inferred from pixels in this build; enter them when adding a full
-                patient record. Live birth (LB) scores come from the model below when the API is configured.
+          <h2>Where the model looked (Grad-CAM)</h2>
+          {!mlBase && (
+            <div className={styles.mlSetup}>
+              <p className={styles.mlMuted}>
+                The app calls a small Python service for the model (PyTorch does not run in the browser here).
               </p>
-              <div className={styles.mlPanel}>
-                <p className={styles.mlScoresTitle}>Live birth (LB) model</p>
-                {okLb.length > 0 && (
-                  <p className={styles.mlMuted}>
-                    Scores are computed per image. If different embryos still show almost the same P(LB=1), the bundled
-                    checkpoint may be weak or mostly reflecting class balance in training—not reliable image-specific
-                    discrimination until you re-train or use a stronger model.
-                  </p>
-                )}
-                {!mlBase && (
-                  <div className={styles.mlSetup}>
-                    <p className={styles.mlMuted}>
-                      The app calls a small Python service for <strong>P(LB=0)</strong> and <strong>P(LB=1)</strong>{' '}
-                      (PyTorch does not run in the browser here).
-                    </p>
-                    <details className={styles.mlSetupDetails}>
-                      <summary className={styles.mlSetupSummary}>Enable the API (3 steps)</summary>
-                      <ol className={styles.mlSetupList}>
-                        <li>
-                          <code className={styles.codeInline}>cd blastocyst_ml</code> then{' '}
-                          <code className={styles.codeInline}>
-                            uvicorn serve_predict:app --host 127.0.0.1 --port 8000
-                          </code>
-                        </li>
-                        <li>
-                          Project root: create <code className={styles.codeInline}>.env.local</code> with{' '}
-                          <code className={styles.codeInline}>VITE_ML_API_URL=http://127.0.0.1:8000</code>
-                        </li>
-                        <li>
-                          Restart <code className={styles.codeInline}>npm run dev</code> and reload this case.
-                        </li>
-                      </ol>
-                    </details>
-                  </div>
-                )}
-                {mlBase && mlLoading && pendingMlCount > 0 && (
-                  <p className={styles.mlMuted}>
-                    Running live-birth model for {pendingMlCount} image(s)…
-                  </p>
-                )}
-                {mlErrors.length > 0 && (
-                  <div className={styles.mlErrorList}>
-                    {mlErrors.map((e) => (
-                      <p key={e.embryoNumber} className={styles.mlError}>
-                        Embryo #{e.embryoNumber}: {e.message}
-                      </p>
-                    ))}
-                  </div>
-                )}
-                {okLb.map(({ embryoNumber, ml }) => (
-                  <MlLbScores
-                    key={embryoNumber}
-                    title={`Embryo #${embryoNumber}`}
-                    ml={ml}
-                    patientAge={case_.patientAge}
-                  />
-                ))}
+              <details className={styles.mlSetupDetails}>
+                <summary className={styles.mlSetupSummary}>Enable the API (3 steps)</summary>
+                <ol className={styles.mlSetupList}>
+                  <li>
+                    <code className={styles.codeInline}>cd blastocyst_ml</code> then{' '}
+                    <code className={styles.codeInline}>uvicorn serve_predict_gardner:app --host 127.0.0.1 --port 8000</code>
+                  </li>
+                  <li>
+                    Project root: create <code className={styles.codeInline}>.env.local</code> with{' '}
+                    <code className={styles.codeInline}>VITE_ML_API_URL=http://127.0.0.1:8000</code>
+                  </li>
+                  <li>
+                    Restart <code className={styles.codeInline}>npm run dev</code> and reload this case.
+                  </li>
+                </ol>
+              </details>
+            </div>
+          )}
+          {mlBase && pendingMlCount > 0 && (
+            <p className={styles.mlMuted}>
+              {mlLoading ? `Running the model for ${pendingMlCount} image(s)…` : 'Starting model…'}
+            </p>
+          )}
+          {mlErrors.length > 0 && (
+            <div className={styles.mlErrorList}>
+              {mlErrors.map((e) => (
+                <p key={e.embryoNumber} className={styles.mlError}>
+                  Embryo #{e.embryoNumber}: {e.message}
+                </p>
+              ))}
+            </div>
+          )}
+          {okMl.map(({ embryoNumber, ml }) =>
+            ml.heatmaps ? (
+              <div key={embryoNumber} className={styles.bigHeatmapGroup}>
+                {okMl.length > 1 && <p className={styles.bigHeatmapTitle}>Embryo #{embryoNumber}</p>}
+                <div className={styles.bigHeatmapRow}>
+                  {(['EXP', 'ICM', 'TE'] as const).map((label) => (
+                    <figure key={label} className={styles.bigHeatmapCard} title={AXIS_INFO[label]}>
+                      <img
+                        src={ml.heatmaps![label.toLowerCase() as 'exp' | 'icm' | 'te']}
+                        alt={`Grad-CAM heatmap for ${label} score`}
+                        className={styles.bigHeatmapImg}
+                      />
+                      <figcaption className={styles.bigHeatmapLabel}>{label}</figcaption>
+                    </figure>
+                  ))}
+                </div>
               </div>
-            </>
+            ) : null
+          )}
+          {okMl.length > 0 && (
+            <p className={styles.mlMuted}>
+              Warmer colours mark the parts of the image that pushed the model most toward its answer. The maps are
+              coarse and look alike for all three grades, so they show roughly where the model looked, not exact
+              outlines.
+            </p>
+          )}
+          {(case_.firstReviewer || case_.secondReviewer || case_.verifiedAt) && (
+            <div className={styles.trail}>
+              {case_.firstReviewer && (
+                <div className={styles.trailItem}>
+                  <span className={styles.trailLabel}>Clinical review</span>
+                  <span>{case_.firstReviewer}</span>
+                </div>
+              )}
+              {case_.secondReviewer && (
+                <div className={styles.trailItem}>
+                  <span className={styles.trailLabel}>QA sign-off</span>
+                  <span>{case_.secondReviewer}</span>
+                </div>
+              )}
+              {case_.verifiedAt && (
+                <div className={styles.trailItem}>
+                  <span className={styles.trailLabel}>Result locked at</span>
+                  <span>{new Date(case_.verifiedAt).toLocaleString()}</span>
+                </div>
+              )}
+            </div>
           )}
         </section>
+      )}
 
-        <section className={styles.section}>
-          <h2>Assessment trail</h2>
-          <div className={styles.trail}>
-            {case_.firstReviewer && (
-              <div className={styles.trailItem}>
-                <span className={styles.trailLabel}>Clinical review</span>
-                <span>{case_.firstReviewer}</span>
-              </div>
-            )}
-            {case_.secondReviewer && (
-              <div className={styles.trailItem}>
-                <span className={styles.trailLabel}>QA sign-off</span>
-                <span>{case_.secondReviewer}</span>
-              </div>
-            )}
-            {case_.verifiedAt && (
-              <div className={styles.trailItem}>
-                <span className={styles.trailLabel}>Result locked at</span>
-                <span>{new Date(case_.verifiedAt).toLocaleString()}</span>
-              </div>
-            )}
-            {!case_.firstReviewer && (
-              <p className={styles.muted}>System assessment only; optional clinical review when flagged.</p>
-            )}
-          </div>
-        </section>
-      </div>
+      {mlBase && okMl.length > 0 && (
+        <InsightsPanel
+          baseUrl={mlBase}
+          embryos={okMl.map(({ embryoNumber, ml }) => ({ embryoNumber, ml }))}
+          clinical={case_.clinical}
+          onSaveClinical={(clinical) => updateCase(case_.id, { clinical, patientAge: clinical.femaleAge })}
+        />
+      )}
 
       {case_.notes && (
         <section className={styles.section}>
@@ -429,11 +320,11 @@ export function CaseDetail() {
                     {img.blastocystStage && <span>Stage: {img.blastocystStage}</span>}
                     {em && !('error' in em) && (
                       <span className={styles.embryoMlBadge}>
-                        P(LB=1) {(em.probabilityLb1 * 100).toFixed(1)}%
+                        EXP {em.predictedExp} · ICM {gradeText('icm', em.predictedIcm)} · TE {gradeText('te', em.predictedTe)}
                       </span>
                     )}
                     {em && 'error' in em && (
-                      <span className={styles.embryoMlErr}>LB model unavailable</span>
+                      <span className={styles.embryoMlErr}>Gardner model unavailable</span>
                     )}
                     <span className={styles.captureTime}>
                       {new Date(img.capturedAt).toLocaleString()}
@@ -446,9 +337,69 @@ export function CaseDetail() {
         </section>
       )}
 
+      {!isVerified && (
+        <section className={styles.section}>
+          <h2>Review decision</h2>
+          {isAdmin ? (
+            <div className={styles.decisionBox}>
+              <p className={styles.decisionText}>
+                Look at the image, the heatmaps and the transfer priority above, then approve or reject this assessment.
+                {case_.status === 'pending_review' ? '' : ` Current status: ${statusLabels[case_.status]}.`}
+              </p>
+              {!rejecting && (
+                <div className={styles.decisionActions}>
+                  <button type="button" className={styles.approveBtn} onClick={approve}>
+                    Approve
+                  </button>
+                  <button type="button" className={styles.rejectBtn} onClick={() => setRejecting(true)}>
+                    Reject
+                  </button>
+                </div>
+              )}
+              {rejecting && (
+                <div className={styles.rejectBox}>
+                  <label className={styles.rejectLabel} htmlFor="reject-reason">
+                    Reason for rejecting
+                  </label>
+                  <textarea
+                    id="reject-reason"
+                    className={styles.rejectInput}
+                    rows={3}
+                    value={rejectReason}
+                    onChange={(e) => {
+                      setRejectReason(e.target.value);
+                      setRejectError(null);
+                    }}
+                    placeholder="For example: image is not a blastocyst, wrong day, grades need an embryologist's recheck"
+                  />
+                  {rejectError && <p className={styles.mlError}>{rejectError}</p>}
+                  <div className={styles.decisionActions}>
+                    <button type="button" className={styles.rejectBtn} onClick={reject}>
+                      Confirm reject
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.cancelBtn}
+                      onClick={() => {
+                        setRejecting(false);
+                        setRejectError(null);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className={styles.muted}>Only an admin can approve or reject an assessment.</p>
+          )}
+        </section>
+      )}
+
       {isVerified && (
         <div className={styles.locked}>
-          Result locked. No further edits. See <Link to="/audit">Audit log</Link> for full history.
+          Result approved{case_.firstReviewer ? ` by ${case_.firstReviewer}` : ''} and locked. No further edits. See <Link to="/audit">Audit log</Link> for full history.
         </div>
       )}
     </div>

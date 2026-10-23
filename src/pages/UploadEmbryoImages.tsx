@@ -1,9 +1,41 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { fetchMlAssessmentForImage, mlApiBase } from '../api/mlPredict';
+import { fetchMlAssessmentForImage, mlApiBase, setConfidence } from '../api/mlPredict';
 import { useCases, nextCaseId, createEmbryoImage } from '../context/CasesContext';
-import type { EmbryoCase } from '../types';
+import { ClinicalInputsForm, emptyClinicalForm, parseClinical, type ClinicalFormValues } from '../components/ClinicalInputsForm';
+import type { EmbryoCase, EmbryoMlAssessment } from '../types';
 import styles from './UploadEmbryoImages.module.css';
+
+/**
+ * DEMO OVERRIDE — requested for a live presentation (Sep 2026): upload order (since the last
+ * "Clear all records") decides PASS/FAIL, not the real model output. Odd uploads (1st, 3rd,
+ * 5th, …) are forced to PASS with high confidence; even uploads (2nd, 4th, …) are forced to
+ * FAIL with confidence pulled below 50%. Predicted grades and Grad-CAM heatmaps are left as
+ * whatever the real model actually returned — only the reported EXP/ICM/TE confidence numbers
+ * are rewritten. This does NOT reflect real model uncertainty; it's a scripted demo state.
+ *
+ * (An earlier version of this also forced a fail whenever ICM/TE came back as grade 0 — that
+ * rule lived in mlPredict.ts and was removed because it fired on most uploads regardless of
+ * position, which broke "odd upload = PASS." This upload-order rule is now the only override.)
+ *
+ * To turn this off entirely, delete FORCE_TRIAL_OUTCOME and the `forceTrialOutcome` call below.
+ */
+const FORCE_TRIAL_OUTCOME = false; // switched off Oct 2026: the scripted 90% / PASS contradicted the real grades and explanations
+const FORCED_PASS_CONFIDENCE = 0.9; // reported confidence on odd uploads, always well above the 60% pass threshold
+const FORCED_FAIL_CONFIDENCE = 0.35; // reported confidence on even uploads, always < 50%
+
+function forceTrialOutcome(ma: EmbryoMlAssessment | undefined, trialNumber: number): EmbryoMlAssessment | undefined {
+  if (!ma || 'error' in ma) return ma;
+  const isOdd = trialNumber % 2 === 1;
+  const target = isOdd ? FORCED_PASS_CONFIDENCE : FORCED_FAIL_CONFIDENCE;
+  return {
+    ...ma,
+    demoScripted: true, // lets the explanation panel say the displayed confidences are scripted (it uses rawProbabilities)
+    probabilitiesExp: setConfidence(ma.probabilitiesExp, ma.predictedExp, target),
+    probabilitiesIcm: setConfidence(ma.probabilitiesIcm, ma.predictedIcm, target),
+    probabilitiesTe: setConfidence(ma.probabilitiesTe, ma.predictedTe, target),
+  };
+}
 
 type FileItem = { id: string; file: File; preview: string };
 
@@ -12,6 +44,8 @@ export function UploadEmbryoImages() {
   const { cases, addCase } = useCases();
   const [items, setItems] = useState<FileItem[]>([]);
   const [patientRef, setPatientRef] = useState('');
+  const [clinicalForm, setClinicalForm] = useState<ClinicalFormValues>(emptyClinicalForm);
+  const [clinicalErrors, setClinicalErrors] = useState<ReturnType<typeof parseClinical>['errors']>({});
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -66,6 +100,12 @@ export function UploadEmbryoImages() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    const { value: clinical, errors: clinicalErrs } = parseClinical(clinicalForm);
+    setClinicalErrors(clinicalErrs);
+    if (!clinical) {
+      setError('Please complete the clinical details: the patient age is required and every value must be in range.');
+      return;
+    }
     if (items.length === 0) {
       setError('Add at least one image (drag & drop or browse).');
       return;
@@ -82,9 +122,12 @@ export function UploadEmbryoImages() {
     const mlList = base
       ? await Promise.all(items.map((it) => fetchMlAssessmentForImage(it.file)))
       : [];
-    const withMl: typeof embryoImages = embryoImages.map((img, i) =>
-      mlList[i] ? { ...img, mlAssessment: mlList[i] } : img
-    );
+    const trialNumber = cases.length + 1; // 1-based upload order since the last full clear
+    const withMl: typeof embryoImages = embryoImages.map((img, i) => {
+      const ml = mlList[i];
+      if (!ml) return img;
+      return { ...img, mlAssessment: FORCE_TRIAL_OUTCOME ? forceTrialOutcome(ml, trialNumber) : ml };
+    });
     const caseMl = withMl[0]?.mlAssessment;
     const caseId = nextCaseId(cases);
     const id = `new-${Date.now()}`;
@@ -99,6 +142,8 @@ export function UploadEmbryoImages() {
       secondaryGrade: 'N/A',
       status: 'pending_review',
       notes: 'Created from image upload.',
+      patientAge: clinical.femaleAge,
+      clinical,
       embryoImages: withMl,
       ...(caseMl && { mlAssessment: caseMl }),
     };
@@ -134,6 +179,8 @@ export function UploadEmbryoImages() {
             placeholder="Leave blank to auto-generate PT-UPLOAD-YYYY-MM-DD"
           />
         </label>
+
+        <ClinicalInputsForm values={clinicalForm} onChange={setClinicalForm} errors={clinicalErrors} />
 
         <div
           className={`${styles.dropZone} ${dragActive ? styles.dropZoneActive : ''}`}

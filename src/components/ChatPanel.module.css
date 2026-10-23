@@ -1,0 +1,25 @@
+.panel { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-card); display: flex; flex-direction: column; overflow: hidden; }
+.head { padding: 0.8rem 1rem; border-bottom: 1px solid var(--border-muted); display: flex; flex-direction: column; gap: 0.15rem; }
+.sub { font-size: 0.78rem; color: var(--text-muted); }
+.log { padding: 0.9rem 1rem; max-height: 380px; min-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem; background: var(--bg-elevated); }
+.empty p { margin: 0 0 0.5rem 0; font-size: 0.85rem; color: var(--text-secondary); }
+.chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.chip { font: inherit; font-size: 0.8rem; padding: 0.35rem 0.7rem; border-radius: 999px; border: 1px solid var(--accent); color: var(--accent); background: var(--bg-card); cursor: pointer; transition: background var(--transition-fast); }
+.chip:hover:not(:disabled) { background: var(--accent-muted); }
+.chip:disabled { opacity: 0.5; cursor: default; }
+.userRow, .botRow { display: flex; }
+.userRow { justify-content: flex-end; }
+.userBubble, .botBubble { max-width: 88%; padding: 0.55rem 0.8rem; border-radius: var(--radius); font-size: 0.88rem; line-height: 1.45; }
+.userBubble { background: var(--accent); color: #fff; }
+.botBubble { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); }
+.userBubble p, .botBubble p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.meta { display: block; margin-top: 0.4rem; font-size: 0.7rem; color: var(--text-muted); }
+.typing { font-size: 0.82rem; color: var(--text-muted); }
+.error { font-size: 0.82rem; color: var(--danger); background: var(--danger-muted); padding: 0.5rem 0.7rem; border-radius: var(--radius-sm); overflow-wrap: anywhere; }
+.form { display: flex; gap: 0.5rem; padding: 0.7rem 1rem; border-top: 1px solid var(--border-muted); }
+.form input { flex: 1; min-width: 0; padding: 0.5rem 0.7rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font: inherit; }
+.form input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+.form button { padding: 0.5rem 1rem; border: none; border-radius: var(--radius-sm); background: var(--accent); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.form button:hover:not(:disabled) { background: var(--accent-hover); }
+.form button:disabled { opacity: 0.5; cursor: default; }
+.footnote { margin: 0; padding: 0 1rem 0.8rem; font-size: 0.72rem; color: var(--text-muted); }

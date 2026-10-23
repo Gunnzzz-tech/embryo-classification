@@ -1,7 +1,7 @@
 .page {
   max-width: 850px;
   margin: 0 auto;
-  animation: fadeSlideUp 0.5s ease-out both;
+  animation: fadeSlideUp 0.3s ease-out both;
 }
 
 .back {
@@ -27,20 +27,8 @@
   padding: 1.5rem;
   background: var(--bg-card);
   border: 1px solid var(--border);
+  border-top: 3px solid var(--accent);
   border-radius: var(--radius-lg);
-  position: relative;
-  overflow: hidden;
-  animation: scaleIn 0.4s ease-out both;
-}
-
-.header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--accent), var(--teal), var(--purple));
 }
 
 .header h1 {
@@ -134,13 +122,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.25rem;
-  animation: slideInStagger 0.5s ease-out both;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.section:hover {
-  border-color: var(--border);
-  box-shadow: var(--shadow);
 }
 
 .section h2 {
@@ -159,7 +140,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, var(--border-muted), transparent);
+  background: var(--border-muted);
 }
 
 .dl {
@@ -177,13 +158,6 @@
 .dl dd {
   margin: 0;
   font-weight: 500;
-}
-
-.gradeHint {
-  margin: 1rem 0 0 0;
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  line-height: 1.45;
 }
 
 .mlPanel {
@@ -270,69 +244,109 @@
   margin-bottom: 0.35rem;
 }
 
-.mlProbDl {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.5rem 1rem;
-  margin: 0;
-  font-size: 0.88rem;
-  align-items: start;
+.gradeTiles {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
-.mlProbDl dt {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  color: var(--accent);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.mlProbDl dd {
-  margin: 0;
-  color: var(--text-primary);
-  line-height: 1.45;
-}
-
-.mlProbNote {
-  color: var(--text-secondary);
-  font-weight: 400;
-}
-
-.mlExplain {
-  margin-top: 0.25rem;
-  padding: 0.85rem 1rem;
+.gradeTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 70px;
+  padding: 0.65rem 0.9rem;
   background: var(--bg-elevated);
   border: 1px solid var(--border-muted);
   border-radius: var(--radius-sm);
-  font-size: 0.84rem;
-  line-height: 1.55;
+}
+
+.gradeTileLabel {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.gradeTileValue {
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.gradeTileConfidence {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.mlVerdict {
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
   color: var(--text-secondary);
 }
 
-.mlExplain p {
-  margin: 0 0 0.65rem 0;
+.heatmapSection {
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed var(--border-muted);
 }
 
-.mlExplain p:last-child {
+.heatmapSectionTitle {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.heatmapSectionHint {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.heatmapRow {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.heatmapTrailGroup {
+  margin-bottom: 0.6rem;
+}
+
+.heatmapTrailGroup:last-child {
   margin-bottom: 0;
 }
 
-.mlExplainLead {
+.heatmapTrailGroup .lbSummaryMuted {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.78rem;
+}
+
+.heatmapCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: 96px;
+}
+
+.heatmapImg {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-muted);
+  background: var(--bg-elevated);
+}
+
+.heatmapCardLabel {
+  font-size: 0.68rem;
   font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.86rem;
-}
-
-.mlLine {
-  margin: 0 0 0.35rem 0;
-  font-size: 0.92rem;
-  color: var(--text-primary);
-}
-
-.mlLabel {
+  letter-spacing: 0.05em;
   color: var(--text-muted);
-  font-size: 0.85rem;
 }
 
 .mlMuted {
@@ -372,7 +386,7 @@
 }
 
 .trailItem:hover {
-  background: rgba(14, 165, 233, 0.03);
+  background: rgba(13, 148, 136, 0.03);
 }
 
 .trailItem:last-child {
@@ -383,6 +397,26 @@
   font-size: 0.83rem;
   color: var(--text-muted);
   font-weight: 500;
+}
+
+.checkBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.checkPass {
+  background: var(--success);
+  color: white;
+}
+
+.checkFail {
+  background: var(--danger);
+  color: white;
 }
 
 .muted {
@@ -401,38 +435,24 @@
 
 .flaggedBox {
   background: var(--warning-muted);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  border: 1px solid var(--warning);
   color: var(--text-primary);
   padding: 1.25rem;
   border-radius: var(--radius-sm);
   font-size: 0.9rem;
-  position: relative;
-  overflow: hidden;
-  animation: scaleIn 0.3s ease-out both;
-}
-
-.flaggedBox::before {
-  content: '⚠';
-  position: absolute;
-  top: -10px;
-  right: -5px;
-  font-size: 4rem;
-  opacity: 0.06;
-  pointer-events: none;
 }
 
 .locked {
   margin-top: 1.5rem;
   padding: 1.15rem 1.25rem;
   background: var(--success-muted);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  border: 1px solid var(--success);
   border-radius: var(--radius);
   font-size: 0.9rem;
   color: var(--success);
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  animation: scaleIn 0.4s ease-out both;
 }
 
 .locked::before {
@@ -458,14 +478,11 @@
   border-radius: var(--radius);
   overflow: hidden;
   background: var(--bg-primary);
-  transition: all var(--transition-base);
-  animation: scaleIn 0.4s ease-out both;
+  transition: border-color var(--transition-base);
 }
 
 .imageCard:hover {
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--accent-muted);
+  border-color: var(--accent);
 }
 
 .embryoImg {
@@ -473,7 +490,6 @@
   aspect-ratio: 1;
   object-fit: cover;
   display: block;
-  transition: transform var(--transition-slow);
 }
 
 .imageCard:hover .embryoImg {
@@ -507,4 +523,136 @@
   color: var(--text-muted);
   margin-top: 0.25rem;
   font-family: var(--font-mono);
+}
+/* Large Grad-CAM maps (replaces the old result summary) */
+.bigHeatmapGroup {
+  margin-bottom: 1.25rem;
+}
+
+.bigHeatmapTitle {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.bigHeatmapRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+@media (max-width: 760px) {
+  .bigHeatmapRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.bigHeatmapCard {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.bigHeatmapImg {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.bigHeatmapLabel {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+/* Approve / reject decision */
+.decisionBox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.decisionText {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.decisionActions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.approveBtn,
+.rejectBtn,
+.cancelBtn {
+  padding: 0.6rem 1.4rem;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.approveBtn {
+  background: var(--success);
+  color: #fff;
+}
+
+.approveBtn:hover {
+  filter: brightness(0.92);
+}
+
+.rejectBtn {
+  background: transparent;
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.rejectBtn:hover {
+  background: var(--danger-muted);
+}
+
+.cancelBtn {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+
+.rejectBox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rejectLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.rejectInput {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.rejectInput:focus {
+  outline: none;
+  border-color: var(--accent);
 }

@@ -1,0 +1,64 @@
+.fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem 1.25rem;
+  margin: 0;
+  background: var(--bg-card);
+}
+.legend {
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0 0.4rem;
+}
+.intro {
+  margin: 0 0 1rem 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.9rem 1.1rem;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.unit {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.req {
+  color: var(--danger);
+}
+.field input,
+.field select {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  background: var(--bg-primary);
+}
+.field input:focus,
+.field select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+  border-color: var(--accent);
+}
+.field input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+.hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.err {
+  font-size: 0.78rem;
+  color: var(--danger);
+}

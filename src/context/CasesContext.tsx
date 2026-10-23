@@ -7,6 +7,7 @@ type CasesContextValue = {
   addCase: (case_: EmbryoCase) => void;
   updateCase: (id: string, patch: Partial<EmbryoCase>) => void;
   getCaseById: (id: string) => EmbryoCase | undefined;
+  clearAllCases: () => void;
 };
 
 const CasesContext = createContext<CasesContextValue | null>(null);
@@ -30,9 +31,14 @@ export function CasesProvider({ children }: { children: React.ReactNode }) {
     return cases.find((c) => c.id === id);
   }, [cases]);
 
+  /** Wipe every patient/case record (e.g. before a demo). Does not touch sign-in. */
+  const clearAllCases = useCallback(() => {
+    setCases([]);
+  }, []);
+
   const value = useMemo(
-    () => ({ cases, addCase, updateCase, getCaseById }),
-    [cases, addCase, updateCase, getCaseById]
+    () => ({ cases, addCase, updateCase, getCaseById, clearAllCases }),
+    [cases, addCase, updateCase, getCaseById, clearAllCases]
   );
 
   return <CasesContext.Provider value={value}>{children}</CasesContext.Provider>;

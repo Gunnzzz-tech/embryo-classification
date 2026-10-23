@@ -26,14 +26,62 @@ export interface EmbryoImage {
   mlAssessment?: EmbryoMlAssessment;
 }
 
-/** Result of optional local ML API (live-birth model; not Gardner grading). */
+/** Grad-CAM heatmap overlays (data: URLs, ready for an <img src>) explaining an EXP/ICM/TE score. */
+export interface EmbryoMlHeatmaps {
+  exp: string;
+  icm: string;
+  te: string;
+}
+
+export type InfertilityCause =
+  | 'unexplained' | 'male_factor' | 'tubal' | 'ovulatory' | 'endometriosis' | 'diminished_reserve' | 'uterine' | 'other';
+
+/** What doctors weigh alongside the image. Used only for the transfer-priority score and the explanations; the image model never sees it. */
+export interface ClinicalInputs {
+  /** Age of the egg source at retrieval, years (required) */
+  femaleAge: number;
+  /** AMH, ng/mL */
+  amh?: number;
+  /** Basal (day 2-3) FSH, mIU/mL */
+  fsh?: number;
+  /** Body-mass index, kg/m2 */
+  bmi?: number;
+  /** Previous completed IVF/ICSI cycles */
+  priorCycles?: number;
+  /** Previous embryo transfers that did not result in a pregnancy */
+  failedTransfers?: number;
+  infertilityCause?: InfertilityCause;
+}
+
+/** Where a Grad-CAM map concentrates (numbers computed by the ML API). */
+export interface HeadFocus {
+  central_fraction: number;
+  peripheral_fraction: number;
+  spread: number;
+  centroid_offset: number;
+  pattern: 'central' | 'peripheral' | 'mixed' | 'diffuse';
+}
+
+/** Result of optional local ML API (Gardner grading: EXP/ICM/TE, not live-birth outcome). */
 export type EmbryoMlAssessment =
   | {
       assessedAt: string;
-      predictedLbClass: 0 | 1;
-      /** Model-estimated P(live birth), class 1 */
-      probabilityLb1: number;
-      probabilities: [number, number];
+      predictedExp: number;
+      predictedIcm: number;
+      predictedTe: number;
+      probabilitiesExp: number[];
+      probabilitiesIcm: number[];
+      probabilitiesTe: number[];
+      /** Grad-CAM overlays showing which region of the image drove each score. Absent for older
+       * stored assessments computed before heatmaps were added, or if the API call for them failed. */
+      heatmaps?: EmbryoMlHeatmaps;
+      /** The model's real, un-folded probabilities (ICM/TE keep their 4th "not assessable" class). The explanation
+       * and chat use these, never the displayed (possibly demo-scripted) numbers. */
+      rawProbabilities?: { exp: number[]; icm: number[]; te: number[] };
+      /** Where each head's heatmap concentrates. */
+      focus?: { exp?: HeadFocus; icm?: HeadFocus; te?: HeadFocus };
+      /** True when the displayed confidence numbers were rewritten by the upload demo override. */
+      demoScripted?: boolean;
     }
   | {
       assessedAt: string;
@@ -63,6 +111,8 @@ export interface EmbryoCase {
   fertilizationMethod?: 'IVF' | 'ICSI' | 'IVF+ICSI';
   /** Filled when VITE_ML_API_URL is set and prediction runs on case open */
   mlAssessment?: EmbryoMlAssessment;
+  /** Clinical context entered by the clinician (age, AMH, FSH, BMI, history, cause) */
+  clinical?: ClinicalInputs;
 }
 
 /** Input for adding a new patient record with embryo image(s) */

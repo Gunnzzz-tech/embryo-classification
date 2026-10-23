@@ -47,6 +47,36 @@
   gap: 1rem;
 }
 
+.roleSwitch {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.roleBtn {
+  flex: 1;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.roleBtn:hover {
+  background: var(--bg-elevated);
+}
+
+.roleBtnActive {
+  background: var(--accent);
+  color: white;
+}
+
+.roleBtnActive:hover {
+  background: var(--accent);
+}
+
 .error {
   background: var(--danger-muted);
   border: 1px solid var(--danger);
@@ -103,4 +133,86 @@
   font-size: 0.8rem;
   color: var(--text-muted);
   text-align: center;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-muted);
+}
+
+.googleBtn {
+  display: flex;
+  justify-content: center;
+}
+
+.googleSetup {
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.85rem;
+  background: var(--bg-elevated);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.googleSetup {
+  padding: 0;
+  overflow: hidden;
+  background: var(--bg-card);
+}
+
+.googleIconBtn {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.85rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #3c4043;
+  background: var(--bg-primary);
+  transition: background var(--transition-fast);
+}
+
+.googleIconBtn::-webkit-details-marker {
+  display: none;
+}
+
+.googleIconBtn:hover {
+  background: var(--bg-elevated);
+}
+
+.googleSetupHint {
+  margin: 0.6rem 0.85rem 0 0.85rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.googleSetup ol {
+  margin: 0.6rem 0 0 0;
+  padding: 0.6rem 0.85rem 0.85rem 2rem;
+  line-height: 1.6;
+}
+
+.googleSetup code {
+  font-family: var(--font-mono);
+  font-size: 0.78em;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: var(--bg-primary);
 }

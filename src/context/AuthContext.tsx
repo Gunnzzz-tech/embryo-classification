@@ -2,8 +2,11 @@ import { createContext, useCallback, useContext, useMemo, useState } from 'react
 
 const AUTH_KEY = 'embryo-admin-auth';
 
+export type Role = 'admin' | 'nurse';
+
 type AuthState = {
   doctorId: string;
+  role: Role;
   signedIn: true;
 } | { signedIn: false };
 
@@ -11,8 +14,8 @@ function loadStored(): AuthState {
   try {
     const raw = localStorage.getItem(AUTH_KEY);
     if (!raw) return { signedIn: false };
-    const { doctorId } = JSON.parse(raw) as { doctorId: string };
-    if (doctorId) return { doctorId, signedIn: true };
+    const { doctorId, role } = JSON.parse(raw) as { doctorId: string; role: Role };
+    if (doctorId && (role === 'admin' || role === 'nurse')) return { doctorId, role, signedIn: true };
   } catch {
     // ignore
   }
@@ -21,7 +24,7 @@ function loadStored(): AuthState {
 
 type AuthContextValue = {
   auth: AuthState;
-  signIn: (doctorId: string, _password: string) => boolean;
+  signIn: (doctorId: string, _password: string, role: Role) => boolean;
   signOut: () => void;
 };
 
@@ -30,13 +33,13 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [auth, setAuth] = useState<AuthState>(loadStored);
 
-  const signIn = useCallback((doctorId: string, _password: string) => {
+  const signIn = useCallback((doctorId: string, _password: string, role: Role) => {
     const id = doctorId.trim();
     // For now: any non-empty ID and any password verifies
     if (!id) return false;
-    const next: AuthState = { doctorId: id, signedIn: true };
+    const next: AuthState = { doctorId: id, role, signedIn: true };
     setAuth(next);
-    localStorage.setItem(AUTH_KEY, JSON.stringify({ doctorId: id }));
+    localStorage.setItem(AUTH_KEY, JSON.stringify({ doctorId: id, role }));
     return true;
   }, []);
 

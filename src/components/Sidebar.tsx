@@ -1,14 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, type Role } from '../context/AuthContext';
 import styles from './Sidebar.module.css';
 
-const navItems = [
-  { to: '/', label: 'Dashboard', icon: '◉' },
-  { to: '/cases', label: 'Cases & verification', icon: '◇' },
-  { to: '/upload', label: 'Upload images', icon: '▴' },
-  { to: '/add-patient', label: 'Add patient record', icon: '+' },
-  { to: '/audit', label: 'Audit log', icon: '▣' },
-  { to: '/quality', label: 'Quality control', icon: '⬡' },
+const navItems: Array<{ to: string; label: string; role?: Role }> = [
+  { to: '/cases', label: 'Cases & verification' },
+  { to: '/upload', label: 'Upload images' },
+  { to: '/add-patient', label: 'Add patient record' },
+  { to: '/audit', label: 'Audit log', role: 'admin' },
 ];
 
 export function Sidebar() {
@@ -20,29 +18,33 @@ export function Sidebar() {
     navigate('/signin', { replace: true });
   };
 
+  const visibleItems = navItems.filter(
+    (item) => !item.role || (auth.signedIn && auth.role === item.role)
+  );
+
   return (
     <aside className={styles.sidebar}>
       <div className={styles.brand}>
-        <span className={styles.logo}>◈</span>
         <span className={styles.name}>Embryo Fertility</span>
         <span className={styles.tagline}>Verified results</span>
       </div>
       <nav className={styles.nav}>
-        {navItems.map(({ to, label, icon }) => (
+        {visibleItems.map(({ to, label }) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) => (isActive ? `${styles.link} ${styles.active}` : styles.link)}
-            end={to === '/'}
           >
-            <span className={styles.icon}>{icon}</span>
             {label}
           </NavLink>
         ))}
       </nav>
       <div className={styles.footer}>
         {auth.signedIn && (
-          <p className={styles.userId}>Dr. {auth.doctorId}</p>
+          <>
+            <p className={styles.userId}>Dr. {auth.doctorId}</p>
+            <span className={styles.roleTag}>{auth.role === 'admin' ? 'Admin' : 'Nurse'}</span>
+          </>
         )}
         <div className={styles.badge}>ML assessment</div>
         <button type="button" className={styles.signOut} onClick={handleSignOut}>

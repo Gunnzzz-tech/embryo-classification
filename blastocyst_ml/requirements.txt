@@ -9,3 +9,6 @@ opencv-python-headless>=4.5.0
 fastapi>=0.100.0
 uvicorn[standard]>=0.22.0
 python-multipart>=0.0.6
+# Gardner grading transfer-learning backbones (ResNet18 / EfficientNet-B0),
+# used by model_gardner_transfer.py + train_gardner_transfer.py
+pytorchcv>=0.0.74

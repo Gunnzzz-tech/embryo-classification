@@ -7,20 +7,7 @@
   flex: 1;
   padding: 2rem 2.5rem;
   overflow-x: auto;
-  animation: fadeSlideUp 0.4s ease-out;
-  position: relative;
-}
-
-/* Decorative top-line gradient */
-.main::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 2.5rem;
-  right: 2.5rem;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--accent-muted), var(--purple-muted), transparent);
-  opacity: 0.6;
+  animation: fadeSlideUp 0.3s ease-out;
 }
 
 @media (max-width: 768px) {
@@ -30,10 +17,5 @@
 
   .main {
     padding: 1.25rem;
-  }
-
-  .main::before {
-    left: 1.25rem;
-    right: 1.25rem;
   }
 }
